@@ -1,58 +1,48 @@
 package com.cloc.ui.theme
 
-import android.app.Activity
-import android.os.Build
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.unit.dp
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+object NDSpace {
+    val xs = 4.dp; val sm = 8.dp; val md = 16.dp; val lg = 24.dp
+    val xl = 32.dp; val xxl = 48.dp; val xxxl = 64.dp; val xxxxl = 96.dp
+}
+
+val NothingShapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp), small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp), large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(16.dp),
 )
 
-private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+val NDEasing = CubicBezierEasing(0.25f, 0.1f, 0.25f, 1f)
+fun <T> ndMicro() = tween<T>(200, easing = NDEasing)
+fun <T> ndTransition() = tween<T>(350, easing = NDEasing)
 
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
-)
+val LocalNothingColors = staticCompositionLocalOf { DarkNothing }
 
+object ND {
+    val colors: NothingColors @Composable @ReadOnlyComposable get() = LocalNothingColors.current
+    val type = NDType
+    val space = NDSpace
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CLOCTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
-    content: @Composable () -> Unit
-) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
-    }
-
+fun NothingTheme(content: @Composable () -> Unit) {
     MaterialTheme(
-        colorScheme = colorScheme,
-        typography = Typography,
-        content = content
-    )
+        colorScheme = DarkNothing.toMaterial(),
+        typography = NothingTypography,
+        shapes = NothingShapes,
+    ) {
+        CompositionLocalProvider(
+            LocalNothingColors provides DarkNothing,
+            LocalRippleConfiguration provides null,
+            LocalContentColor provides DarkNothing.textPrimary,
+            content = content,
+        )
+    }
 }
