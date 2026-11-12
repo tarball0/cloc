@@ -39,9 +39,6 @@ import com.cloc.ui.theme.ND
 import com.cloc.util.TimeFormat
 import kotlin.math.sqrt
 
-/** Trial: amber hourglass outline. Set to false for the original white. */
-private const val AMBER_OUTLINE = true
-
 /** A centred card on a dark see-through backdrop. Tap outside or the × to close. */
 @Composable
 fun NDDialogCard(onDismiss: () -> Unit, square: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
@@ -74,10 +71,9 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
         }
         Box(Modifier.fillMaxWidth().weight(1f).padding(vertical = ND.space.sm), contentAlignment = Alignment.Center) {
             val white = ND.colors.textDisplay
-            val outline = if (AMBER_OUTLINE) ND.colors.amber else white
             // Sized by the space left over, so it never covers the time or the buttons.
             Canvas(Modifier.fillMaxHeight().aspectRatio(0.62f, matchHeightConstraintsFirst = true)) {
-                drawHourglass(fraction, white, outline)
+                drawHourglass(fraction, white)
             }
         }
         Text(
@@ -109,7 +105,7 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
  * The top is solid white down to a level that drops as time runs out; the bottom fills up.
  * Levels use the triangle's area, so the white *amount* moves at a steady rate.
  */
-private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color, outline: Color) {
+private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color) {
     val w = size.width
     val h = size.height
     val neckY = h / 2
@@ -134,6 +130,6 @@ private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color, outl
     clipPath(bottom) { drawRect(white, topLeft = Offset(0f, bottomLevel), size = androidx.compose.ui.geometry.Size(w, h - bottomLevel)) }
 
     val stroke = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
-    drawPath(top, outline, style = stroke)
-    drawPath(bottom, outline, style = stroke)
+    drawPath(top, white, style = stroke)
+    drawPath(bottom, white, style = stroke)
 }
