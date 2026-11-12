@@ -39,6 +39,9 @@ import com.cloc.ui.theme.ND
 import com.cloc.util.TimeFormat
 import kotlin.math.sqrt
 
+/** Trial: red sand. Set to false for white sand. */
+private const val RED_SAND = true
+
 /** A centred card on a dark see-through backdrop. Tap outside or the × to close. */
 @Composable
 fun NDDialogCard(onDismiss: () -> Unit, square: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
@@ -71,9 +74,10 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
         }
         Box(Modifier.fillMaxWidth().weight(1f).padding(vertical = ND.space.sm), contentAlignment = Alignment.Center) {
             val white = ND.colors.textDisplay
+            val sand = if (RED_SAND) ND.colors.accent else white
             // Sized by the space left over, so it never covers the time or the buttons.
             Canvas(Modifier.fillMaxHeight().aspectRatio(0.62f, matchHeightConstraintsFirst = true)) {
-                drawHourglass(fraction, white)
+                drawHourglass(fraction, white, sand)
             }
         }
         Text(
@@ -105,7 +109,7 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
  * The top is solid white down to a level that drops as time runs out; the bottom fills up.
  * Levels use the triangle's area, so the white *amount* moves at a steady rate.
  */
-private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color) {
+private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color, sand: Color) {
     val w = size.width
     val h = size.height
     val neckY = h / 2
@@ -124,10 +128,10 @@ private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color) {
     val r = remainingFraction.coerceIn(0f, 1f)
     // Top: sand sits on the neck; its height is √r of the bulb (a triangle's area grows with height²).
     val topLevel = neckY - half * sqrt(r)
-    clipPath(top) { drawRect(white, topLeft = Offset(0f, topLevel), size = androidx.compose.ui.geometry.Size(w, neckY - topLevel)) }
+    clipPath(top) { drawRect(sand, topLeft = Offset(0f, topLevel), size = androidx.compose.ui.geometry.Size(w, neckY - topLevel)) }
     // Bottom: sand piles from the base; filled height = 1 − √r of the bulb.
     val bottomLevel = h - half * (1 - sqrt(r))
-    clipPath(bottom) { drawRect(white, topLeft = Offset(0f, bottomLevel), size = androidx.compose.ui.geometry.Size(w, h - bottomLevel)) }
+    clipPath(bottom) { drawRect(sand, topLeft = Offset(0f, bottomLevel), size = androidx.compose.ui.geometry.Size(w, h - bottomLevel)) }
 
     val stroke = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
     drawPath(top, white, style = stroke)
