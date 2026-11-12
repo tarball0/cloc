@@ -108,25 +108,21 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
 }
 
 /**
- * Hourglass: two triangles meeting at a narrow neck.
- * The top is solid white down to a level that drops as time runs out; the bottom fills up.
- * Levels use the triangle's area, so the white *amount* moves at a steady rate.
+ * Hourglass: two triangles whose tips meet at a single point in the middle,
+ * with the four outer corners rounded off.
+ * The top drains as time runs out and the bottom fills up.
+ * Levels use the triangle's area, so the *amount* of sand moves at a steady rate.
  */
 private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color, sand: Color) {
     val w = size.width
     val h = size.height
     val neckY = h / 2
-    val neck = w * 0.06f
     val half = neckY
+    val corner = w * 0.09f
+    val tip = Offset(w / 2, neckY)
 
-    val top = Path().apply {
-        moveTo(0f, 0f); lineTo(w, 0f)
-        lineTo(w / 2 + neck, neckY); lineTo(w / 2 - neck, neckY); close()
-    }
-    val bottom = Path().apply {
-        moveTo(w / 2 - neck, neckY); lineTo(w / 2 + neck, neckY)
-        lineTo(w, h); lineTo(0f, h); close()
-    }
+    val top = roundedTriangle(Offset(0f, 0f), Offset(w, 0f), tip, corner)
+    val bottom = roundedTriangle(Offset(0f, h), Offset(w, h), tip, corner)
 
     val r = remainingFraction.coerceIn(0f, 1f)
     // Top: sand sits on the neck; its height is √r of the bulb (a triangle's area grows with height²).
@@ -139,4 +135,23 @@ private fun DrawScope.drawHourglass(remainingFraction: Float, white: Color, sand
     val stroke = Stroke(width = 1.5.dp.toPx(), join = StrokeJoin.Round)
     drawPath(top, white, style = stroke)
     drawPath(bottom, white, style = stroke)
+}
+
+/**
+ * A triangle from [a] to [b] to [tip], with the corners at [a] and [b] curved
+ * (radius [r]) and the tip left sharp so the two halves touch.
+ */
+private fun roundedTriangle(a: Offset, b: Offset, tip: Offset, r: Float): Path {
+    fun toward(from: Offset, to: Offset, d: Float): Offset {
+        val v = to - from
+        return from + v * (d / v.getDistance())
+    }
+    return Path().apply {
+        moveTo(tip.x, tip.y)
+        toward(a, tip, r).let { lineTo(it.x, it.y) }
+        toward(a, b, r).let { quadraticTo(a.x, a.y, it.x, it.y) }
+        toward(b, a, r).let { lineTo(it.x, it.y) }
+        toward(b, tip, r).let { quadraticTo(b.x, b.y, it.x, it.y) }
+        close()
+    }
 }
