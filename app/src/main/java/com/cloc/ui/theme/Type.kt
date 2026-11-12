@@ -25,11 +25,12 @@ val LetteraMono = FontFamily(
 private val base = TextStyle(fontWeight = FontWeight.Normal, fontSynthesis = FontSynthesis.None)
 
 object NDType {
-    // Ndot 57: numbers. Keep at 24sp and up, because dot-matrix gets mushy when small.
-    val numberXl = base.copy(fontFamily = Ndot57, fontSize = 72.sp, lineHeight = 1.0.em,  letterSpacing = (-0.03).em)
-    val numberLg = base.copy(fontFamily = Ndot57, fontSize = 48.sp, lineHeight = 1.05.em, letterSpacing = (-0.02).em)
-    val numberMd = base.copy(fontFamily = Ndot57, fontSize = 32.sp, lineHeight = 1.1.em,  letterSpacing = (-0.02).em)
-    val numberSm = base.copy(fontFamily = Ndot57, fontSize = 24.sp, lineHeight = 1.1.em)
+    // Ndot 57 Caps: numbers. Same digits as Ndot 57, but its colon is two single dots,
+    // like the Nothing lock-screen clock. Keep at 24sp and up; dot-matrix gets mushy when small.
+    val numberXl = base.copy(fontFamily = Ndot57Caps, fontSize = 72.sp, lineHeight = 1.0.em,  letterSpacing = (-0.03).em)
+    val numberLg = base.copy(fontFamily = Ndot57Caps, fontSize = 48.sp, lineHeight = 1.05.em, letterSpacing = (-0.02).em)
+    val numberMd = base.copy(fontFamily = Ndot57Caps, fontSize = 32.sp, lineHeight = 1.1.em,  letterSpacing = (-0.02).em)
+    val numberSm = base.copy(fontFamily = Ndot57Caps, fontSize = 24.sp, lineHeight = 1.1.em)
 
     // NType 82 Headline: big headings only
     val heading = base.copy(fontFamily = NType82Headline, fontSize = 32.sp, lineHeight = 1.15.em, letterSpacing = (-0.01).em)
