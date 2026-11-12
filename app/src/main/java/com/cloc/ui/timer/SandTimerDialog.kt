@@ -42,6 +42,9 @@ import kotlin.math.sqrt
 /** Trial: red sand. Set to false for white sand. */
 private const val RED_SAND = true
 
+/** How see-through the sand is: 1 = solid, 0 = invisible. */
+private const val SAND_ALPHA = 0.5f
+
 /** A centred card on a dark see-through backdrop. Tap outside or the × to close. */
 @Composable
 fun NDDialogCard(onDismiss: () -> Unit, square: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
@@ -74,7 +77,7 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
         }
         Box(Modifier.fillMaxWidth().weight(1f).padding(vertical = ND.space.sm), contentAlignment = Alignment.Center) {
             val white = ND.colors.textDisplay
-            val sand = if (RED_SAND) ND.colors.accent else white
+            val sand = (if (RED_SAND) ND.colors.accent else white).copy(alpha = SAND_ALPHA)
             // Sized by the space left over, so it never covers the time or the buttons.
             Canvas(Modifier.fillMaxHeight().aspectRatio(0.62f, matchHeightConstraintsFirst = true)) {
                 drawHourglass(fraction, white, sand)
