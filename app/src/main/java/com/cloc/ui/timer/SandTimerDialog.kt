@@ -43,7 +43,7 @@ import kotlin.math.sqrt
 private const val RED_SAND = true
 
 /** How see-through the sand is: 1 = solid, 0 = invisible. */
-private const val SAND_ALPHA = 0.5f
+private const val SAND_ALPHA = 0.7f
 
 /** A centred card on a dark see-through backdrop. Tap outside or the × to close. */
 @Composable
