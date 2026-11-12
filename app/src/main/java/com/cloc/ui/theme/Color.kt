@@ -18,6 +18,7 @@ data class NothingColors(
     val textDisplay: Color = Color(0xFFFFFFFF),
     val segmentEmpty: Color = Color(0xFF222222),
     val accent: Color = Color(0xFFD71921),
+    val amber: Color = Color(0xFFD4A843),    // warm muted amber, calm on OLED black
 )
 
 val DarkNothing = NothingColors()
