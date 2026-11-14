@@ -56,4 +56,17 @@ class BatchMathTest {
         assertEquals(hm(23, 30), t.first())
         assertEquals(hm(24, 30), t.last())
     }
+
+    @Test fun addCustomOneByOne() {
+        var t = BatchMath.addCustom(emptyList(), hm(6, 0))
+        t = BatchMath.addCustom(t, hm(6, 20))
+        t = BatchMath.addCustom(t, hm(5, 50))   // earlier: becomes the first
+        assertEquals(listOf(hm(5, 50), hm(6, 0), hm(6, 20)), t)
+        assertEquals(t, BatchMath.addCustom(t, hm(6, 0)))   // duplicate ignored
+    }
+
+    @Test fun addCustomPastMidnight() {
+        val t = BatchMath.addCustom(BatchMath.addCustom(emptyList(), hm(23, 50)), hm(0, 10))
+        assertEquals(listOf(hm(23, 50), 1440 + hm(0, 10)), t)
+    }
 }

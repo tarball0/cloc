@@ -86,6 +86,8 @@ fun NDIconButton(
     filled: Boolean = false,
     enabled: Boolean = true,
     outlined: Boolean = true,
+    /** Colour for an outlined button: the ring and the icon both use it (e.g. the red accent). */
+    tint: Color? = null,
 ) {
     val c = ND.colors
     Box(
@@ -93,10 +95,10 @@ fun NDIconButton(
             .size(size)
             .clip(CircleShape)
             .background(if (filled) c.textDisplay else Color.Transparent)
-            .then(if (!filled && outlined) Modifier.border(1.dp, c.borderVisible, CircleShape) else Modifier)
+            .then(if (tint != null) Modifier.border(1.5.dp, tint, CircleShape) else if (!filled && outlined) Modifier.border(1.dp, c.borderVisible, CircleShape) else Modifier)
             .ndClickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        NDIcon(type, size = size * 0.46f, color = if (filled) c.black else c.textDisplay)
+        NDIcon(type, size = size * 0.46f, color = tint ?: if (filled) c.black else c.textDisplay)
     }
 }

@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -55,6 +57,7 @@ fun NumberWheel(
     val itemPx = with(LocalDensity.current) { ItemHeight.toPx() }
     val view = LocalView.current
     val select by rememberUpdatedState(onSelect)
+    var syncing by remember { mutableStateOf(false) }
 
     // Which row sits in the middle right now.
     val center by remember {
@@ -68,9 +71,21 @@ fun NumberWheel(
             .distinctUntilChanged()
             .drop(1)
             .collect {
+                if (syncing) return@collect
                 view.performHapticFeedback(HapticFeedbackConstants.CLOCK_TICK)
                 select(it % size)
             }
+    }
+
+    // Follow changes made from outside (e.g. a +10 bubble moving the time): roll the
+    // shortest way to the new value, without reporting the rows passed on the way.
+    LaunchedEffect(selectedIndex) {
+        val current = center % size
+        if (state.isScrollInProgress || current == selectedIndex) return@LaunchedEffect
+        val forward = (selectedIndex - current + size) % size
+        val steps = if (!cyclic) selectedIndex - center else if (forward > size / 2) forward - size else forward
+        syncing = true
+        try { state.animateScrollToItem((center + steps).coerceIn(0, size * repeats - 1)) } finally { syncing = false }
     }
 
     Box(modifier.width(width).height(ItemHeight * 3), contentAlignment = Alignment.Center) {
@@ -99,13 +114,13 @@ fun NumberWheel(
  * [minutes] is the time of day in minutes (0..1439).
  */
 @Composable
-fun TimeWheel(minutes: Int, onChange: (Int) -> Unit, is24h: Boolean, modifier: Modifier = Modifier) {
+fun TimeWheel(minutes: Int, onChange: (Int) -> Unit, is24h: Boolean, modifier: Modifier = Modifier, fillWidth: Boolean = true) {
     val h = (minutes / 60) % 24
     val m = minutes % 60
     val current by rememberUpdatedState(minutes)
     val change by rememberUpdatedState(onChange)
 
-    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
+    Row(if (fillWidth) modifier.fillMaxWidth() else modifier, horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
         if (is24h) {
             NumberWheel(
                 items = List(24) { "%02d".format(it) },

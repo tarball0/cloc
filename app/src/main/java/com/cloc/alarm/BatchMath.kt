@@ -23,6 +23,23 @@ object BatchMath {
             .distinct()
             .sorted()
 
+    /**
+     * Custom, built one alarm at a time: adds [clock] (0–1439) to [times].
+     * The time is placed on whichever day (today or the next) keeps the whole batch shortest,
+     * so 23:50 then 00:10 becomes a 20-minute batch, and 06:00 then 05:50 puts 05:50 first.
+     * Returns [times] unchanged if the alarm is already there, the batch is full, or it would be too long.
+     */
+    fun addCustom(times: List<Int>, clock: Int): List<Int> {
+        if (times.isEmpty()) return listOf(clock % 1440)
+        if (times.size >= MAX_ALARMS) return times
+        val best = listOf(clock - 1440, clock, clock + 1440)
+            .map { (times + it).sorted() }
+            .minBy { it.last() - it.first() }
+        val shift = if (best.first() < 0) 1440 else if (best.first() >= 1440) -1440 else 0
+        val result = best.map { it + shift }.distinct()
+        return if (result.size == times.size || result.last() > MAX_MINUTE) times else result
+    }
+
     /** Linear: start, start + interval, start + 2 × interval … */
     fun linear(start: Int, interval: Int, count: Int): List<Int> =
         List(count) { i -> start + i * interval }.filter { it <= MAX_MINUTE }

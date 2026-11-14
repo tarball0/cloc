@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
@@ -74,14 +75,10 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
     // LOG starts at the largest count that still keeps every gap ≥ 1 minute, until changed.
     var logCount by remember { mutableStateOf(if (initial?.kind == AlarmKind.LOG) initial.count else null) }
     var end by remember { mutableIntStateOf((initial?.end ?: (defaultStart + 60)) % 1440) }
-    // Custom chain: minutes after the first alarm, e.g. [30, 45, 55].
-    var offsets by remember {
-        mutableStateOf<List<Int>>(
-            if (initial?.kind == AlarmKind.CUSTOM) initial.times.drop(1).map { it - initial.times.first() } else emptyList(),
-        )
+    // Custom stack: the alarms added so far, sorted (≥1440 = next day).
+    var stack by remember {
+        mutableStateOf<List<Int>>(if (initial?.kind == AlarmKind.CUSTOM) initial.times else emptyList())
     }
-    var customOpen by remember { mutableStateOf(false) }
-    var customMinutes by remember { mutableIntStateOf(15) }
 
     val effectiveKind = if (kind == AlarmKind.SINGLE) AlarmKind.SINGLE else batchKind
     val logSpan = BatchMath.span(start, end)
@@ -90,7 +87,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
 
     val times: List<Int> = when (effectiveKind) {
         AlarmKind.SINGLE -> listOf(start)
-        AlarmKind.CUSTOM -> BatchMath.custom(start, offsets)
+        AlarmKind.CUSTOM -> stack
         AlarmKind.LINEAR -> BatchMath.linear(start, interval, count.coerceIn(2, maxLinear.coerceAtLeast(2)))
         AlarmKind.LOG -> BatchMath.logarithmic(start, end, (logCount ?: maxLog).coerceIn(2, maxLog))
     }
@@ -106,7 +103,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                 enabled = true,
                 skipDate = null,
                 oneOffDate = null,
-                start = start,
+                start = times.first(),
                 interval = interval,
                 count = times.size,
                 end = end,
@@ -184,30 +181,39 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                 }
 
                 AlarmKind.CUSTOM -> {
-                    Section("First alarm")
-                    TimeWheel(start, { start = it }, is24h)
-                    Section("Add after the last alarm (minutes)")
+                    Section("Add alarm")
+                    // Dial and red + are centred together as one group: pick a time, tap +, repeat.
+                    Row(
+                        // The hour column has empty space left of its digits; nudge so it *looks* centred.
+                        Modifier.fillMaxWidth().offset(x = (-10).dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        TimeWheel(start, { start = it }, is24h, fillWidth = false)
+                        Spacer(Modifier.width(ND.space.md))
+                        NDIconButton(
+                            NDIconType.Plus,
+                            { stack = BatchMath.addCustom(stack, start) },
+                            size = 56.dp,
+                            tint = ND.colors.accent,
+                        )
+                    }
+                    Section("Quick add · min")
+                    // A bubble adds an alarm N minutes after the last one (or after the dial time if none yet),
+                    // and moves the dial there so you can keep going.
                     fun add(minutes: Int) {
-                        val last = offsets.lastOrNull() ?: 0
-                        val next = last + minutes
-                        if (start + next <= BatchMath.MAX_MINUTE && offsets.size + 1 < BatchMath.MAX_ALARMS) {
-                            offsets = offsets + next
+                        val base = if (stack.isEmpty()) BatchMath.addCustom(stack, start) else stack
+                        val next = base.last() + minutes
+                        if (next <= BatchMath.MAX_MINUTE && base.size < BatchMath.MAX_ALARMS) {
+                            stack = base + next
+                            start = next % 1440
                         }
                     }
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(ND.space.sm),
                         verticalArrangement = Arrangement.spacedBy(ND.space.sm),
                     ) {
-                        listOf(2, 5, 10, 20, 30, 60).forEach { m -> NDTag("+$m", onClick = { add(m) }) }
-                        NDTag("Custom", onClick = { customOpen = !customOpen }, filled = customOpen)
-                    }
-                    if (customOpen) {
-                        Spacer(Modifier.height(ND.space.md))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            NDStepper(customMinutes, { customMinutes = it }, 1..240, unit = "min")
-                            Spacer(Modifier.weight(1f))
-                            NDButton("Add +$customMinutes", { add(customMinutes) })
-                        }
+                        listOf(1, 2, 5, 10, 20, 30).forEach { m -> NDTag("+$m", onClick = { add(m) }) }
                     }
                 }
 
@@ -232,7 +238,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                 }
             }
 
-            if (effectiveKind != AlarmKind.SINGLE) {
+            if (effectiveKind != AlarmKind.SINGLE && times.isNotEmpty()) {
                 Section("Preview · ${times.size} alarms")
                 times.forEachIndexed { i, t ->
                     if (i > 0) NDDivider()
@@ -245,12 +251,13 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                         )
                         if (t >= 1440) NDLabel("+1D  ")
                         NDLabel(if (i == 0) "First" else TimeFormat.gap(t - times[i - 1]), Modifier.width(56.dp))
-                        if (effectiveKind == AlarmKind.CUSTOM && i > 0) {
+                        if (effectiveKind == AlarmKind.CUSTOM) {
                             NDIconButton(
                                 NDIconType.Close,
                                 {
-                                    val offset = t - start
-                                    offsets = offsets.filterNot { it == offset }
+                                    // Removing the first alarm may leave the rest a day ahead; pull them back.
+                                    val rest = stack - t
+                                    stack = if (rest.isNotEmpty() && rest.first() >= 1440) rest.map { it - 1440 } else rest
                                 },
                                 outlined = false,
                                 size = 36.dp,
