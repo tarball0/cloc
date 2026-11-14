@@ -51,7 +51,7 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-/** Stopwatch tab: analog dial (seconds round the edge, minutes in the small dial, hours as the faint arc) with the digital time inside. */
+/** Stopwatch tab: analog dial (seconds round the edge, minutes in the small dial) with the digital time inside. */
 @Composable
 fun StopwatchScreen() {
     val state by StopwatchStore.state.collectAsState()
@@ -146,19 +146,18 @@ private fun DrawScope.drawStopwatch(elapsedMs: Long, white: Color, red: Color) {
         )
     }
 
-    // Faint arc showing hours: one full turn every 12 hours.
-    val hourFraction = (elapsedMs % 43_200_000L) / 43_200_000f
-    val arcR = r - 22.dp.toPx()
-    drawArc(
-        white.copy(alpha = 0.25f), startAngle = -90f, sweepAngle = 360f * hourFraction, useCenter = false,
-        topLeft = Offset(c.x - arcR, c.y - arcR), size = Size(arcR * 2, arcR * 2),
-        style = Stroke(2.dp.toPx(), cap = StrokeCap.Round),
-    )
-
-    // Small inner dial for minutes: one turn per hour, ticks every 5 min, hand jumps each whole minute.
+    // Small inner dial for minutes: one dot per minute (bigger every 5), one turn per hour.
+    // The hand jumps a dot each whole minute.
     val sub = Offset(c.x, c.y - r * 0.38f)
     val subR = r * 0.2f
-    for (i in 0 until 12) drawCircle(white.copy(alpha = 0.6f), 1.5.dp.toPx(), polar(subR, i * 30.0, sub))
+    for (i in 0 until 60) {
+        val major = i % 5 == 0
+        drawCircle(
+            white.copy(alpha = if (major) 0.8f else 0.35f),
+            if (major) 1.5.dp.toPx() else 0.75.dp.toPx(),
+            polar(subR, i * 6.0, sub),
+        )
+    }
     val minutes = (elapsedMs / 60_000L) % 60
     drawLine(white, sub, polar(subR * 0.8f, minutes * 6.0, sub), 1.5.dp.toPx(), StrokeCap.Round)
     drawCircle(white, 2.5.dp.toPx(), sub)
