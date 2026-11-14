@@ -85,7 +85,9 @@ class RingService : Service() {
         }
     }
 
+    /** The one sound playing (never more than one), and which alarm's sound it is. */
     private var player: MediaPlayer? = null
+    private var playingSound: String? = null
     private val handler = Handler(Looper.getMainLooper())
     private val autoStop = Runnable { finish() }
 
@@ -119,8 +121,17 @@ class RingService : Service() {
         return START_NOT_STICKY
     }
 
+    /**
+     * Only one alarm ever sounds. If another goes off while one is ringing, the newest takes
+     * over the screen; its sound replaces the old one (the same sound just carries on).
+     */
     private fun startSound() {
-        if (player != null) return // a new batch alarm while ringing just updates the screen
+        val wanted = _current.value?.sound
+        if (player != null) {
+            if (wanted == playingSound) return // same sound (e.g. next alarm in a batch): keep going
+            stopSound()
+        }
+        playingSound = wanted
         val fallback = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
@@ -156,11 +167,16 @@ class RingService : Service() {
         }
     }
 
-    private fun finish() {
-        handler.removeCallbacks(autoStop)
+    private fun stopSound() {
         player?.run { try { stop() } catch (_: Exception) {}; release() }
         player = null
+        playingSound = null
         getSystemService(VibratorManager::class.java).defaultVibrator.cancel()
+    }
+
+    private fun finish() {
+        handler.removeCallbacks(autoStop)
+        stopSound()
         _current.value = null
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
