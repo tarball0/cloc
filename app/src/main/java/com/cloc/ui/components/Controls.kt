@@ -130,6 +130,10 @@ fun <T> SegmentedControl(
 }
 
 /** Seven round toggles, Monday first. [days] is the bitmask from [com.cloc.data.Alarm]. */
+
+/** Days shown in red, like holidays on a calendar. Add DayOfWeek.SATURDAY to mark both weekend days. */
+private val RED_DAYS = setOf(DayOfWeek.SUNDAY)
+
 @Composable
 fun DayPicker(days: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
     val view = LocalView.current
@@ -138,19 +142,24 @@ fun DayPicker(days: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier)
         DayOfWeek.entries.forEach { day ->
             val bit = 1 shl (day.value - 1)
             val on = days and bit != 0
+            val holiday = day in RED_DAYS
             Box(
                 Modifier
                     .size(40.dp)
                     .clip(CircleShape)
                     .background(if (on) c.textDisplay else Color.Transparent)
-                    .border(1.dp, if (on) c.textDisplay else c.borderVisible, CircleShape)
+                    .border(1.dp, if (holiday) c.accent else if (on) c.textDisplay else c.borderVisible, CircleShape)
                     .ndClickable {
                         view.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY)
                         onChange(days xor bit)
                     },
                 contentAlignment = Alignment.Center,
             ) {
-                Text(day.name.take(1), style = ND.type.caption, color = if (on) c.black else c.textDisplay)
+                Text(
+                    day.name.take(1),
+                    style = ND.type.caption,
+                    color = if (holiday) c.accent else if (on) c.black else c.textDisplay,
+                )
             }
         }
     }
