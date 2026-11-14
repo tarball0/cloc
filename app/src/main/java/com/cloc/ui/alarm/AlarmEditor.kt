@@ -233,8 +233,6 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                     TimeWheel(end, { end = it }, is24h)
                     Section("Number of alarms · max $maxLog")
                     NDStepper((logCount ?: maxLog).coerceIn(2, maxLog), { logCount = it }, 2..maxLog)
-                    Spacer(Modifier.height(ND.space.sm))
-                    NDLabel("Gaps roughly halve, snapping to round times")
                 }
             }
 
