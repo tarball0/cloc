@@ -35,6 +35,7 @@ import com.cloc.data.TimerStore
 import com.cloc.ui.components.NDIconButton
 import com.cloc.ui.components.NDIconType
 import com.cloc.ui.components.NDLabel
+import com.cloc.ui.components.TabularText
 import com.cloc.ui.theme.ND
 import com.cloc.util.TimeFormat
 import kotlin.math.sqrt
@@ -83,7 +84,7 @@ fun SandTimerDialog(timer: TimerItem, onDismiss: () -> Unit) {
                 drawHourglass(fraction, white, sand)
             }
         }
-        Text(
+        TabularText(
             TimeFormat.countdown(remaining),
             style = ND.type.numberLg,
             color = ND.colors.textDisplay,

@@ -34,6 +34,7 @@ import com.cloc.ui.components.NDIconType
 import com.cloc.ui.components.NDLabel
 import com.cloc.ui.components.SegmentedBar
 import com.cloc.ui.components.ndClickable
+import com.cloc.ui.components.TabularText
 import com.cloc.ui.theme.ND
 import com.cloc.util.TimeFormat
 import kotlinx.coroutines.delay
@@ -106,11 +107,10 @@ private fun TimerRow(timer: TimerItem, now: Long, onOpen: () -> Unit) {
                     color = if (done) ND.colors.accent else ND.colors.textSecondary,
                 )
                 Spacer(Modifier.height(ND.space.xs))
-                Text(
+                TabularText(
                     TimeFormat.countdown(remaining),
                     style = if (timer.running) ND.type.numberLg else ND.type.numberMd,
                     color = ND.colors.textDisplay,
-                    maxLines = 1,
                 )
             }
             NDIconButton(NDIconType.Reset, { TimerStore.reset(timer.id) }, enabled = timer.started)
