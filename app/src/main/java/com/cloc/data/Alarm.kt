@@ -28,6 +28,8 @@ data class Alarm(
     val interval: Int = 30,
     val count: Int = times.size,
     val end: Int = times.lastOrNull() ?: 0,
+    /** Alarm sound: a content URI string, or null for the phone's default alarm sound. */
+    val sound: String? = null,
 ) {
     val isBatch: Boolean get() = kind != AlarmKind.SINGLE
 

@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -48,7 +50,12 @@ private const val SAND_ALPHA = 0.75f
 
 /** A centred card on a dark see-through backdrop. Tap outside or the × to close. */
 @Composable
-fun NDDialogCard(onDismiss: () -> Unit, square: Boolean = false, content: @Composable ColumnScope.() -> Unit) {
+fun NDDialogCard(
+    onDismiss: () -> Unit,
+    square: Boolean = false,
+    scrollable: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             Modifier
@@ -58,6 +65,7 @@ fun NDDialogCard(onDismiss: () -> Unit, square: Boolean = false, content: @Compo
                 .then(if (square) Modifier.aspectRatio(1f) else Modifier)
                 .background(ND.colors.surface, RoundedCornerShape(16.dp))
                 .border(1.dp, ND.colors.borderVisible, RoundedCornerShape(16.dp))
+                .then(if (scrollable) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(ND.space.lg),
             content = content,
         )

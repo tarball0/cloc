@@ -139,9 +139,10 @@ private fun AddTimerDialog(onDismiss: () -> Unit) {
     var m by remember { mutableStateOf(5) }
     var s by remember { mutableStateOf(0) }
     var presetKey by remember { mutableStateOf(0) }
+    var sound by remember { mutableStateOf<String?>(null) }
     val totalMs = ((h * 3600L) + m * 60L + s) * 1000L
 
-    NDDialogCard(onDismiss = onDismiss) {
+    NDDialogCard(onDismiss = onDismiss, scrollable = true) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             NDLabel("New timer", Modifier.weight(1f), color = ND.colors.textDisplay)
             NDIconButton(NDIconType.Close, onDismiss, outlined = false, size = 40.dp)
@@ -164,13 +165,17 @@ private fun AddTimerDialog(onDismiss: () -> Unit) {
         Spacer(Modifier.height(ND.space.xs))
         NDLabel("Presets in minutes")
         Spacer(Modifier.height(ND.space.lg))
+        NDLabel("Sound")
+        Spacer(Modifier.height(ND.space.sm))
+        com.cloc.ui.components.SoundPicker(sound, { sound = it }, listMaxHeight = 192.dp)
+        Spacer(Modifier.height(ND.space.lg))
         Row(horizontalArrangement = Arrangement.spacedBy(ND.space.sm)) {
             NDButton(
-                "Add", { TimerStore.add(totalMs, start = false); onDismiss() },
+                "Add", { TimerStore.add(totalMs, start = false, sound = sound); onDismiss() },
                 Modifier.weight(1f), com.cloc.ui.components.NDButtonStyle.Secondary, enabled = totalMs > 0,
             )
             NDButton(
-                "Start", { TimerStore.add(totalMs, start = true); onDismiss() },
+                "Start", { TimerStore.add(totalMs, start = true, sound = sound); onDismiss() },
                 Modifier.weight(1f), enabled = totalMs > 0,
             )
         }

@@ -105,6 +105,7 @@ object AlarmStore {
         put("interval", interval)
         put("count", count)
         put("end", end)
+        put("sound", sound)
     }
 
     private fun JSONObject.toAlarm(): Alarm {
@@ -122,6 +123,7 @@ object AlarmStore {
             interval = getInt("interval"),
             count = getInt("count"),
             end = getInt("end"),
+            sound = optStringOrNull("sound"),
         )
     }
 

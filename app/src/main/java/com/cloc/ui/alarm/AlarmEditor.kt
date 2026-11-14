@@ -48,6 +48,7 @@ import com.cloc.ui.components.NDLabel
 import com.cloc.ui.components.NDStepper
 import com.cloc.ui.components.NDTag
 import com.cloc.ui.components.SegmentedControl
+import com.cloc.ui.components.SoundPicker
 import com.cloc.ui.components.TimeWheel
 import com.cloc.ui.components.daysLabel
 import com.cloc.ui.theme.ND
@@ -68,6 +69,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
     var kind by remember { mutableStateOf(initial?.kind ?: AlarmKind.SINGLE) }
     var batchKind by remember { mutableStateOf(initial?.kind?.takeIf { it != AlarmKind.SINGLE } ?: AlarmKind.CUSTOM) }
     var label by remember { mutableStateOf(initial?.label ?: "") }
+    var sound by remember { mutableStateOf(initial?.sound) }
     var days by remember { mutableIntStateOf(initial?.days ?: 0) }
     var start by remember { mutableIntStateOf(defaultStart) }
     var interval by remember { mutableIntStateOf(initial?.interval ?: 30) }
@@ -107,6 +109,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                 interval = interval,
                 count = times.size,
                 end = end,
+                sound = sound,
             ),
         )
         onClose()
@@ -170,6 +173,9 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                     }
                 },
             )
+
+            Section("Sound")
+            SoundPicker(sound, { sound = it })
 
             Section("Repeat · ${daysLabel(days)}")
             DayPicker(days, { days = it })

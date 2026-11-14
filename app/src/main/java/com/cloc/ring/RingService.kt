@@ -11,6 +11,7 @@ import android.content.pm.ServiceInfo
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -38,6 +39,8 @@ data class RingInfo(
     val startDay: String? = null,
     val timerId: Long = -1,
     val durationMs: Long = 0,
+    /** Sound to play (content URI); null = the phone's default alarm sound. */
+    val sound: String? = null,
 )
 
 /**
@@ -118,11 +121,24 @@ class RingService : Service() {
 
     private fun startSound() {
         if (player != null) return // a new batch alarm while ringing just updates the screen
-        val uri = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM)
+        val fallback = RingtoneManager.getActualDefaultRingtoneUri(this, RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
             ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        player = try {
-            MediaPlayer().apply {
+        val chosen = _current.value?.sound?.let(Uri::parse)
+        // The alarm's own sound first; if that file is gone or unreadable, the default.
+        player = (if (chosen != null) play(chosen) else null) ?: play(fallback)
+        val vibrator = getSystemService(VibratorManager::class.java).defaultVibrator
+        @Suppress("DEPRECATION") // the newer overload needs Android 13; this one works from 12
+        vibrator.vibrate(
+            VibrationEffect.createWaveform(longArrayOf(0, 600, 900), 0),
+            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build(),
+        )
+    }
+
+    private fun play(uri: Uri): MediaPlayer? {
+        val mp = MediaPlayer()
+        return try {
+            mp.apply {
                 setAudioAttributes(
                     AudioAttributes.Builder()
                         .setUsage(AudioAttributes.USAGE_ALARM)
@@ -135,14 +151,9 @@ class RingService : Service() {
                 start()
             }
         } catch (e: Exception) {
+            mp.release()
             null
         }
-        val vibrator = getSystemService(VibratorManager::class.java).defaultVibrator
-        @Suppress("DEPRECATION") // the newer overload needs Android 13; this one works from 12
-        vibrator.vibrate(
-            VibrationEffect.createWaveform(longArrayOf(0, 600, 900), 0),
-            AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build(),
-        )
     }
 
     private fun finish() {

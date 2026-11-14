@@ -19,6 +19,8 @@ data class TimerItem(
     val remainingMs: Long = durationMs,
     val endAtWallMs: Long? = null,
     val finished: Boolean = false,
+    /** Sound to play (content URI); null = the phone's default alarm sound. */
+    val sound: String? = null,
 ) {
     val running: Boolean get() = endAtWallMs != null
 
@@ -43,9 +45,9 @@ object TimerStore {
 
     fun get(id: Long): TimerItem? = _timers.value.firstOrNull { it.id == id }
 
-    fun add(durationMs: Long, start: Boolean): Long {
+    fun add(durationMs: Long, start: Boolean, sound: String? = null): Long {
         val id = (_timers.value.maxOfOrNull { it.id } ?: 0L) + 1
-        commit(_timers.value + TimerItem(id, durationMs))
+        commit(_timers.value + TimerItem(id, durationMs, sound = sound))
         if (start) start(id)
         return id
     }
@@ -104,6 +106,7 @@ object TimerStore {
                 put("remaining", it.remainingMs)
                 put("endAt", it.endAtWallMs ?: -1L)
                 put("finished", it.finished)
+                put("sound", it.sound)
             })
         }
         prefs.edit().putString("list", arr.toString()).apply()
@@ -122,6 +125,7 @@ object TimerStore {
                     remainingMs = o.getLong("remaining"),
                     endAtWallMs = if (end < 0) null else end,
                     finished = o.getBoolean("finished"),
+                    sound = if (o.isNull("sound")) null else o.getString("sound"),
                 )
             }
         } catch (e: Exception) {

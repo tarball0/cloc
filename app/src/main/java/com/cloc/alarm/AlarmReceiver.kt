@@ -44,6 +44,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     position = index + 1,
                     total = alarm.times.size,
                     startDay = startDay.toString(),
+                    sound = alarm.sound,
                 ),
             )
         }
@@ -54,7 +55,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val alarm = AlarmStore.get(intent.getLongExtra(AlarmScheduler.EXTRA_ALARM_ID, -1)) ?: return
         RingService.start(
             context,
-            RingInfo(kind = RingKind.ALARM, alarmId = alarm.id, label = alarm.label, isBatch = false),
+            RingInfo(kind = RingKind.ALARM, alarmId = alarm.id, label = alarm.label, isBatch = false, sound = alarm.sound),
         )
     }
 
@@ -62,7 +63,7 @@ class AlarmReceiver : BroadcastReceiver() {
         val id = intent.getLongExtra(AlarmScheduler.EXTRA_TIMER_ID, -1)
         val timer = TimerStore.get(id) ?: return
         TimerStore.markFinished(id)
-        RingService.start(context, RingInfo(kind = RingKind.TIMER, timerId = id, durationMs = timer.durationMs))
+        RingService.start(context, RingInfo(kind = RingKind.TIMER, timerId = id, durationMs = timer.durationMs, sound = timer.sound))
     }
 }
 
