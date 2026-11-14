@@ -17,6 +17,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -36,8 +37,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -46,9 +49,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.cloc.R
+import com.cloc.data.AppEvents
 import com.cloc.ui.theme.ND
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,8 +65,12 @@ private data class Sound(val title: String, val uri: String?)
 
 /**
  * Alarm-sound dropdown: a field showing the current sound; tap to open a list of the
- * phone's alarm tones (plus "Default" and "Choose file…"). Tapping a tone selects it and
- * plays a preview; tap the field again to close. [selected] is a content URI or null (default).
+ * phone's alarm tones, plus "Choose file…" and "Change default" (opens the phone's sound
+ * settings). Tapping a tone selects it for this alarm only and plays a preview.
+ *
+ * [selected] is a content URI, or null to follow the phone's default alarm sound. Null is
+ * shown as that sound's real name, and picking the phone's default tone stores null again.
+ * The phone's own default setting is never changed here.
  */
 @Composable
 fun SoundPicker(
@@ -77,10 +89,19 @@ fun SoundPicker(
     val phoneSounds by produceState(emptyList<Sound>()) {
         value = withContext(Dispatchers.IO) { loadAlarmSounds(context) }
     }
-    val title = when {
-        selected == null -> "Default"
-        else -> phoneSounds.firstOrNull { it.uri == selected }?.title ?: fileName(context, selected)
+    // The phone's default alarm sound; re-read whenever the app comes back (e.g. from Settings).
+    val resumed by AppEvents.resumed.collectAsState()
+    val deviceDefault by produceState<Sound?>(null, resumed, phoneSounds) {
+        value = withContext(Dispatchers.IO) { loadDeviceDefault(context, phoneSounds) }
     }
+    val effective = selected ?: deviceDefault?.uri
+    fun titleOf(uri: String?): String = when {
+        uri == null -> ""
+        else -> phoneSounds.firstOrNull { sameSound(it.uri, uri) }?.title
+            ?: deviceDefault?.takeIf { sameSound(it.uri, uri) }?.title
+            ?: fileName(context, uri)
+    }
+    val title = titleOf(effective)
 
     val pickFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
@@ -128,10 +149,11 @@ fun SoundPicker(
             exit = shrinkVertically() + fadeOut(),
         ) {
             val options = buildList {
-                add(Sound("Default", null))
                 addAll(phoneSounds)
-                // A file chosen earlier shows up too, so it can be seen as selected.
-                if (selected != null && phoneSounds.none { it.uri == selected }) add(Sound(title, selected))
+                // A default or chosen file that isn't a phone tone still gets a row, so it shows as selected.
+                listOfNotNull(deviceDefault?.uri, selected).distinctBy { it.substringBefore('?') }.forEach { uri ->
+                    if (none { sameSound(it.uri, uri) }) add(Sound(titleOf(uri), uri))
+                }
             }
             Column(
                 Modifier
@@ -141,11 +163,20 @@ fun SoundPicker(
                     .background(c.surfaceRaised)
                     .border(1.dp, c.borderVisible, shape),
             ) {
-                Column(Modifier.heightIn(max = listMaxHeight).verticalScroll(rememberScrollState())) {
+                // Opens scrolled so the selected sound is in view.
+                val scroll = rememberScrollState()
+                val rowPx = with(LocalDensity.current) { 48.dp.roundToPx() }
+                LaunchedEffect(Unit) {
+                    val i = options.indexOfFirst { sameSound(it.uri, effective) }
+                    if (i > 0) scroll.scrollTo((i - 1) * rowPx)
+                }
+                Column(Modifier.heightIn(max = listMaxHeight).verticalScroll(scroll)) {
                     options.forEach { sound ->
-                        SoundRow(sound.title, isSelected = sound.uri == selected) {
-                            onSelect(sound.uri)
-                            preview.play(sound.uri?.let(Uri::parse) ?: Settings.System.DEFAULT_ALARM_ALERT_URI)
+                        SoundRow(sound.title, isSelected = sameSound(sound.uri, effective)) {
+                            // Picking the phone's default keeps this alarm following it (null).
+                            val isDefault = sameSound(sound.uri, deviceDefault?.uri)
+                            onSelect(if (isDefault) null else sound.uri)
+                            sound.uri?.let { preview.play(Uri.parse(it)) }
                         }
                     }
                 }
@@ -154,13 +185,19 @@ fun SoundPicker(
                     preview.stop()
                     pickFile.launch(arrayOf("audio/*"))
                 }
+                NDDivider()
+                SoundRow("Change default", isSelected = false, icon = R.drawable.ic_settings) {
+                    preview.stop()
+                    // The phone's own sound settings, where the default alarm sound lives.
+                    runCatching { context.startActivity(Intent(Settings.ACTION_SOUND_SETTINGS)) }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun SoundRow(title: String, isSelected: Boolean, onClick: () -> Unit) {
+private fun SoundRow(title: String, isSelected: Boolean, icon: Int? = null, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().height(48.dp).ndClickable(onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
@@ -168,7 +205,16 @@ private fun SoundRow(title: String, isSelected: Boolean, onClick: () -> Unit) {
         // Selected: a 2dp red bar on the left.
         Box(Modifier.width(2.dp).fillMaxHeight().background(if (isSelected) ND.colors.accent else ND.colors.surfaceRaised))
         Spacer(Modifier.width(ND.space.md - 2.dp))
-        Text(title, style = ND.type.body, color = ND.colors.textDisplay, maxLines = 1)
+        Text(title, style = ND.type.body, color = ND.colors.textDisplay, maxLines = 1, modifier = Modifier.weight(1f))
+        if (icon != null) {
+            Image(
+                painterResource(icon),
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                colorFilter = ColorFilter.tint(ND.colors.textDisplay),
+            )
+            Spacer(Modifier.width(ND.space.md))
+        }
     }
 }
 
@@ -202,6 +248,20 @@ private fun loadAlarmSounds(context: Context): List<Sound> = runCatching {
         }
     }
 }.getOrDefault(emptyList())
+
+/** Same sound even if one URI carries extra "?title=…&canonical=1" query bits. */
+private fun sameSound(a: String?, b: String?): Boolean =
+    a != null && b != null && a.substringBefore('?') == b.substringBefore('?')
+
+/** The phone's current default alarm sound, with its real name. */
+private fun loadDeviceDefault(context: Context, phoneSounds: List<Sound>): Sound? = runCatching {
+    val uri = RingtoneManager.getActualDefaultRingtoneUri(context, RingtoneManager.TYPE_ALARM) ?: return null
+    val s = uri.toString()
+    val title = phoneSounds.firstOrNull { sameSound(it.uri, s) }?.title
+        ?: RingtoneManager.getRingtone(context, uri)?.getTitle(context)
+        ?: fileName(context, s)
+    Sound(title, s)
+}.getOrNull()
 
 /** Display name of a chosen audio file, without its extension. */
 private fun fileName(context: Context, uri: String): String = runCatching {
