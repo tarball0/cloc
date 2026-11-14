@@ -15,6 +15,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +43,11 @@ fun ClockScreen() {
     val context = LocalContext.current
     var now by remember { mutableStateOf(LocalDateTime.now()) }
 
-    // Wake up exactly on each new second, so the seconds hand ticks in step with the real clock.
     LaunchedEffect(Unit) {
         while (true) {
             now = LocalDateTime.now()
-            delay(1000 - System.currentTimeMillis() % 1000)
+            if (GLIDE) withFrameMillis { }   // every screen frame, so the hands sweep smoothly
+            else delay(1000 - System.currentTimeMillis() % 1000)   // on each new second: a tick
         }
     }
 
@@ -72,6 +73,9 @@ fun ClockScreen() {
 }
 
 /** Trial: a thin solid ring around the dial. Set to false to go back to the 12 dots. */
+/** Trial: hands sweep smoothly. Set to false to tick once a second. */
+private const val GLIDE = true
+
 private const val DIAL_RING = true
 
 private fun DrawScope.drawDial(now: LocalDateTime, white: Color, red: Color) {
@@ -102,9 +106,11 @@ private fun DrawScope.drawDial(now: LocalDateTime, white: Color, red: Color) {
         )
     }
 
-    val hourAngle = (now.hour % 12) * 30.0 + now.minute * 0.5
-    val minuteAngle = now.minute * 6.0 + now.second * 0.1
-    val secondAngle = now.second * 6.0
+    // Seconds including the fraction (only used when gliding; ticking stays on whole seconds).
+    val sec = now.second + if (GLIDE) now.nano / 1e9 else 0.0
+    val hourAngle = (now.hour % 12) * 30.0 + now.minute * 0.5 + sec / 120.0
+    val minuteAngle = now.minute * 6.0 + sec * 0.1
+    val secondAngle = sec * 6.0
 
     hand(hourAngle, r * 0.50f, 0f, 5.dp.toPx(), white)
     hand(minuteAngle, r * 0.78f, 0f, 3.dp.toPx(), white)
