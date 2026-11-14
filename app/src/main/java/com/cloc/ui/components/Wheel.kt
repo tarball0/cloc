@@ -1,6 +1,7 @@
 package com.cloc.ui.components
 
 import android.view.HapticFeedbackConstants
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -33,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import com.cloc.ui.theme.ND
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.launch
 
 private val ItemHeight = 52.dp
 
@@ -58,6 +61,7 @@ fun NumberWheel(
     val view = LocalView.current
     val select by rememberUpdatedState(onSelect)
     var syncing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
     // Which row sits in the middle right now.
     val center by remember {
@@ -96,7 +100,16 @@ fun NumberWheel(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             items(size * repeats) { i ->
-                Box(Modifier.height(ItemHeight).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(
+                    Modifier
+                        .height(ItemHeight)
+                        .fillMaxWidth()
+                        // Tap a greyed-out row (the one above or below, or AM/PM) to roll to it.
+                        .clickable(interactionSource = null, indication = null, enabled = i != center) {
+                            scope.launch { state.animateScrollToItem(i) }
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(
                         items[i % size],
                         style = style,
