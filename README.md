@@ -19,17 +19,21 @@ A clean analog dial (a thin ring, white hands, a red seconds hand) with the digi
 - **Batch alarms**: a group of alarms that you switch on and off together. Three kinds:
   - **CUSTOM**: build it one alarm at a time. Pick a time on the dial and tap the red **+**, or use the `+1 +2 +5 +10 +20 +30` bubbles to add one that many minutes after the last.
   - **LINEAR**: a start time, an interval and a count.
-  - **LOG**: a start time and a "must be up by" time. The gaps halve each time (rounded to whole minutes, never under 1 min), so the alarms get closer together as the deadline nears.
+  - **LOG**: a start time and a "must be up by" time. The gaps roughly halve each time, so the alarms get closer together as the deadline nears. Times snap to round multiples of 5 where they can (06:30 → 07:00, 07:15, 07:25, 07:28, 07:30).
 - Batch alarms have no snooze. You get a big **OK** that stops the current ring, and a small **I'M UP** that skips the rest of that batch for today.
+- **Per-alarm sounds**: each alarm can use any of the phone's alarm tones or your own audio file. New alarms follow your phone's default alarm sound, which CLOC never changes. "Change default" in the list takes you to the phone's sound settings.
+- Time dials scroll or tap: tap the number above or below, or AM/PM, to jump to it.
+- Only one alarm ever sounds at a time. If another goes off, the newest takes over.
 - Alarms ring over the lock screen, and are rescheduled after a reboot or a time zone change.
 
 <p>
-  <img src="docs/screenshots/editor.png" width="200" alt="Batch alarm editor">
+  <img src="docs/screenshots/editor.png" width="200" alt="Batch alarm editor with sound picker">
+  <img src="docs/screenshots/editor-log.png" width="200" alt="LOG batch preview with rounded times">
   <img src="docs/screenshots/ring.png" width="200" alt="Ringing batch alarm">
 </p>
 
 ### Timers
-- Run several timers at once. Each one has a segmented progress bar, play/pause and reset.
+- Run several timers at once. Each one has a segmented progress bar, play/pause and reset, and its own sound.
 - Tap a timer to open the hourglass view. The red sand drains at a steady rate, and there's a large play/pause and a reset.
 
 <p>
