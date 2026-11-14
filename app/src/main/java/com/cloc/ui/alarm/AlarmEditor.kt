@@ -241,13 +241,14 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                 times.forEachIndexed { i, t ->
                     if (i > 0) NDDivider()
                     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            TimeFormat.clockText(t, is24h),
-                            style = ND.type.body,
-                            color = ND.colors.textDisplay,
-                            modifier = Modifier.weight(1f),
-                        )
-                        if (t >= 1440) NDLabel("+1D  ")
+                        // Time, with "next day" beside it (not beside the gap, where "+1D +30" read as one span).
+                        Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                            Text(TimeFormat.clockText(t, is24h), style = ND.type.body, color = ND.colors.textDisplay)
+                            if (t >= 1440) {
+                                Spacer(Modifier.width(ND.space.sm))
+                                NDLabel("Next day")
+                            }
+                        }
                         NDLabel(if (i == 0) "First" else TimeFormat.gap(t - times[i - 1]), Modifier.width(56.dp))
                         if (effectiveKind == AlarmKind.CUSTOM) {
                             NDIconButton(
