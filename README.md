@@ -12,12 +12,12 @@ A minimal clock app for Android in the Nothing design language: OLED black, dot-
 ## Features
 
 ### Clock
-A clean analog dial (a thin ring, white hands, a red seconds hand) with the digital time and date underneath.
+A clean analog dial (a thin ring, white hands, a red seconds hand) with the digital time and date underneath. The hands glide rather than tick.
 
 ### Alarms
 - **Single alarms** that repeat on chosen days or ring once. They have a **SNOOZE** button.
 - **Batch alarms**: a group of alarms that you switch on and off together. Three kinds:
-  - **CUSTOM**: pick the first alarm, then add more with the `+2 +5 +10 +20 +30 +60` bubbles or a custom gap.
+  - **CUSTOM**: build it one alarm at a time. Pick a time on the dial and tap the red **+**, or use the `+1 +2 +5 +10 +20 +30` bubbles to add one that many minutes after the last.
   - **LINEAR**: a start time, an interval and a count.
   - **LOG**: a start time and a "must be up by" time. The gaps halve each time (rounded to whole minutes, never under 1 min), so the alarms get closer together as the deadline nears.
 - Batch alarms have no snooze. You get a big **OK** that stops the current ring, and a small **I'M UP** that skips the rest of that batch for today.
@@ -39,8 +39,7 @@ A clean analog dial (a thin ring, white hands, a red seconds hand) with the digi
 ### Stopwatch
 An analog stopwatch:
 - seconds round the edge;
-- a minutes sub-dial;
-- a faint hour arc;
+- a 60-dot minutes sub-dial;
 - a digital readout in the centre;
 - laps with split and total times.
 
