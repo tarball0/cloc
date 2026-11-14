@@ -44,6 +44,7 @@ import com.cloc.ui.components.NDButton
 import com.cloc.ui.components.NDButtonStyle
 import com.cloc.ui.components.NDDivider
 import com.cloc.ui.components.NDLabel
+import com.cloc.ui.components.TabularText
 import com.cloc.ui.theme.ND
 import com.cloc.ui.theme.ndTransition
 import com.cloc.util.TimeFormat
@@ -79,12 +80,11 @@ fun StopwatchScreen() {
             val red = ND.colors.accent
             Box(Modifier.size(dial), contentAlignment = Alignment.Center) {
                 Canvas(Modifier.fillMaxSize()) { drawStopwatch(elapsed, white, red) }
-                Text(
+                // Fixed-width digits so the readout doesn't shift as the hundredths race.
+                TabularText(
                     TimeFormat.stopwatch(elapsed),
                     style = ND.type.numberMd,
                     color = white,
-                    maxLines = 1,
-                    softWrap = false,
                     modifier = Modifier.offset(y = dial * 0.2f),
                 )
             }
