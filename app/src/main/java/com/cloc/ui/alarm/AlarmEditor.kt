@@ -234,7 +234,7 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                     Section("Number of alarms · max $maxLog")
                     NDStepper((logCount ?: maxLog).coerceIn(2, maxLog), { logCount = it }, 2..maxLog)
                     Spacer(Modifier.height(ND.space.sm))
-                    NDLabel("Each gap is half the one before, rounded to whole minutes")
+                    NDLabel("Gaps roughly halve, snapping to round times")
                 }
             }
 

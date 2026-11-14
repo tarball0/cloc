@@ -22,10 +22,17 @@ class BatchMathTest {
     }
 
     @Test fun logExampleFromPlan() {
-        // 06:30 → 07:30, 5 alarms: gaps 32, 16, 8, 4
+        // 06:30 → 07:30, 5 alarms: ideal gaps 32, 16, 8, 4, snapped to round times
         assertEquals(
-            listOf(hm(6, 30), hm(7, 2), hm(7, 18), hm(7, 26), hm(7, 30)),
+            listOf(hm(6, 30), hm(7, 0), hm(7, 15), hm(7, 25), hm(7, 30)),
             BatchMath.logarithmic(hm(6, 30), hm(7, 30), 5),
+        )
+    }
+
+    @Test fun logSixAlarmsMatchesHandPicked() {
+        assertEquals(
+            listOf(hm(6, 30), hm(7, 0), hm(7, 15), hm(7, 25), hm(7, 28), hm(7, 30)),
+            BatchMath.logarithmic(hm(6, 30), hm(7, 30), 6),
         )
     }
 

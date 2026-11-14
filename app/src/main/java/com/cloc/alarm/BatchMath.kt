@@ -1,5 +1,6 @@
 package com.cloc.alarm
 
+import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.ln
 import kotlin.math.pow
@@ -55,12 +56,60 @@ object BatchMath {
     }
 
     /**
-     * Logarithmic: [count] alarms from [start] to [end], each gap half the one before.
-     * Gaps are rounded to whole minutes (at least 1), and the first gap absorbs any
-     * rounding difference so the last alarm lands exactly on [end].
-     * Example: 06:30 → 07:30, 5 alarms → gaps 32, 16, 8, 4.
+     * Logarithmic: [count] alarms from [start] to [end], each gap roughly half the one before.
+     * Alarms snap to multiples of 5 where that keeps the halving shape; small gaps near the end
+     * stay exact. Gaps are whole minutes, at least 1, never growing, and the last alarm is on [end].
+     * Example: 06:30 → 07:30, 6 alarms → 06:30, 07:00, 07:15, 07:25, 07:28, 07:30.
      */
     fun logarithmic(start: Int, end: Int, count: Int): List<Int> {
+        val total = span(start, end)
+        val n = (count - 1).coerceIn(1, maxLogCount(total) - 1)
+        val denominator = 1 - 2.0.pow(-n)
+        val ideal = DoubleArray(n) { k -> total * 2.0.pow(-(k + 1)) / denominator }
+
+        // Options for each alarm after the first: whole minutes near the ideal time, plus the
+        // multiples of 5 either side. The last alarm is always exactly on the end.
+        var idealTime = start.toDouble()
+        val options = List(n) { k ->
+            idealTime += ideal[k]
+            if (k == n - 1) listOf(start + total)
+            else {
+                val x = idealTime
+                listOf(
+                    x.roundToInt(), floor(x).toInt(), ceil(x).toInt(),
+                    5 * floor(x / 5).toInt(), 5 * ceil(x / 5).toInt(),
+                ).distinct()
+            }
+        }
+
+        // Best path to each (time, last gap): cost = how far each gap strays from halving,
+        // minus a bonus for every alarm on a round time. Gaps must be ≥ 1 and never grow.
+        data class Path(val cost: Double, val times: List<Int>)
+        var paths = mapOf((start to Int.MAX_VALUE) to Path(0.0, listOf(start)))
+        for (k in 0 until n) {
+            val next = HashMap<Pair<Int, Int>, Path>()
+            for ((key, path) in paths) {
+                val (prev, prevGap) = key
+                for (t in options[k]) {
+                    val gap = t - prev
+                    if (gap < 1 || gap > prevGap) continue
+                    val miss = (gap - ideal[k]) / ideal[k]
+                    val round = if (k < n - 1 && t % 5 == 0) ROUND_BONUS else 0.0
+                    val cost = path.cost + miss * miss - round
+                    val old = next[t to gap]
+                    if (old == null || cost < old.cost) next[t to gap] = Path(cost, path.times + t)
+                }
+            }
+            paths = next
+        }
+        return paths.values.minByOrNull { it.cost }?.times ?: exactLog(start, end, count)
+    }
+
+    /** How much a LOG batch prefers times on multiples of 5 over the exact halving. */
+    private const val ROUND_BONUS = 0.15
+
+    /** LOG batch with the exact halving gaps, rounded to whole minutes (fallback). */
+    private fun exactLog(start: Int, end: Int, count: Int): List<Int> {
         val total = span(start, end)
         val n = (count - 1).coerceIn(1, maxLogCount(total) - 1)
         val denominator = 1 - 2.0.pow(-n)
