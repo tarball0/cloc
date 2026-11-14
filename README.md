@@ -29,6 +29,7 @@ A clean analog dial (a thin ring, white hands, a red seconds hand) with the digi
 <p>
   <img src="docs/screenshots/editor.png" width="200" alt="Batch alarm editor with sound picker">
   <img src="docs/screenshots/editor-log.png" width="200" alt="LOG batch preview with rounded times">
+  <img src="docs/screenshots/sound-picker.png" width="200" alt="Alarm sound picker">
   <img src="docs/screenshots/ring.png" width="200" alt="Ringing batch alarm">
 </p>
 
