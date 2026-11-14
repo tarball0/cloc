@@ -243,7 +243,13 @@ fun AlarmEditor(initial: Alarm?, onClose: () -> Unit) {
                     Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         // Time, with "next day" beside it (not beside the gap, where "+1D +30" read as one span).
                         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                            Text(TimeFormat.clockText(t, is24h), style = ND.type.body, color = ND.colors.textDisplay)
+                            // Monospace font: pad "1:00" to "1:00 " so AM/PM and NEXT DAY line up in every row.
+                            val (num, suffix) = TimeFormat.clock(t, is24h)
+                            Text(
+                                num.padEnd(5) + (suffix?.let { " $it" } ?: ""),
+                                style = ND.type.body,
+                                color = ND.colors.textDisplay,
+                            )
                             if (t >= 1440) {
                                 Spacer(Modifier.width(ND.space.sm))
                                 NDLabel("Next day")
